@@ -14,9 +14,7 @@ Database Schema
 SQL Script to Create the Database and Table
 Python Code Overview
 Results
-Project Evaluation Metrics
-References
-Skills Takeaway
+
 By working on this project, you will develop the following skills:
 
 Web Scraping using Selenium
@@ -24,7 +22,7 @@ Python Programming
 SQL Database Interaction
 Streamlit for building interactive web applications
 Data Filtering and Analysis
-Domain
+
 Domain: Transportation
 The transportation industry can benefit from automated data scraping, analysis, and visualization to improve operational efficiency and strategic planning.
 
@@ -47,7 +45,9 @@ Data Scraping: Selenium is used to scrape Redbus data, including routes, schedul
 Data Storage: The scraped data is stored in an SQL database named Red_bus_project, in the table redbus_routes.
 Streamlit Application: A Streamlit application is developed to visualize and filter the scraped data with filters for route, bus type, price range, star rating, and seat availability.
 Data Analysis: The application retrieves data using SQL queries based on user inputs, allowing for dynamic filtering and data exploration.
+
 Database Schema
+
 Database Name: Red_bus_project
 Table Name: redbus_routes
 
@@ -65,9 +65,9 @@ reaching_time	TIME	The time the bus reaches the destination
 star_rating	FLOAT	The star rating given by passengers
 price	DECIMAL	The ticket price
 seats_available	INT	The number of seats available
+
 SQL Script to Create the Database and Table:
-sql
-Copy code
+
 CREATE DATABASE IF NOT EXISTS Red_bus_project;
 
 USE Red_bus_project;
@@ -86,11 +86,12 @@ CREATE TABLE IF NOT EXISTS redbus_routes (
     seats_available INT NOT NULL
 );
 Python Code Overview
+
 Data Scraping with Selenium
 The following code demonstrates scraping data using Selenium:
 
 python
-Copy code
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
@@ -111,11 +112,11 @@ Route name and link
 Bus name, type, and availability
 Departing and reaching time
 Star rating and price
+
 SQL Database Interaction
 After scraping the data, it is stored in the redbus_routes table in the Red_bus_project database:
 
 python
-Copy code
 import mysql.connector
 
 # Establish connection to MySQL
@@ -140,11 +141,11 @@ mydb.commit()
 # Close connection
 mycursor.close()
 mydb.close()
+
 Streamlit Application
 The Streamlit app allows users to interactively filter the bus data based on parameters like route, price, and availability.
 
 python
-Copy code
 import streamlit as st
 import pandas as pd
 import mysql.connector
