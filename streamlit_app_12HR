@@ -89,3 +89,6 @@ filtered_data = load_data(query, params)
 # Display filtered data
 st.write("### Filtered Bus Data")
 st.dataframe(filtered_data)
+
+# Add a video (you can use a YouTube link or local file)
+st.video("https://youtu.be/eyAAUGhvZu8?si=7f929728B6L-c00c") 
