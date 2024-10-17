@@ -2,6 +2,9 @@ import streamlit as st
 import mysql.connector
 import pandas as pd
 
+# Title of the app
+st.markdown("<h1 style='color: red; font-weight: bold;'>Redbus</h1>", unsafe_allow_html=True)
+
 # MySQL connection setup
 def get_connection():
     return mysql.connector.connect(
@@ -11,19 +14,28 @@ def get_connection():
         database="RED_BUS"
     )
 
-def filter_data(route, bus_type, bus_name, price_range, star_rating, seat_availability):
-    query = "SELECT * FROM RED_BUS_ROUTES WHERE 1=1"
+# Function to filter data based on user input
+def filter_data(state, route, bus_type, bus_name, price_range, star_rating_range, seat_availability, depart_time=None, reach_time=None):
+    query = "SELECT * FROM RED_BUS_R WHERE 1=1"
     params = []
+
+    # State filter
+    if state:
+        query += " AND state = %s"
+        params.append(state)
 
     # Route filter
     if route:
         query += " AND route_name IN (%s)" % ','.join(['%s'] * len(route))
         params.extend(route)
 
-    # Bus type filter
-    if bus_type:
-        query += " AND bustype IN (%s)" % ','.join(['%s'] * len(bus_type))
-        params.extend(bus_type)
+    # Bus type filter (A/C or Non-A/C based on radio button)
+    if bus_type == 'A/C':
+        query += " AND bustype = 'A/C'"  # Match exactly "A/C"
+    elif bus_type == 'NON A/C':
+        query += " AND bustype = 'NON A/C'"  # Match exactly "Non A/C"
+
+
 
     # Bus name filter
     if bus_name:
@@ -35,14 +47,24 @@ def filter_data(route, bus_type, bus_name, price_range, star_rating, seat_availa
     params.extend(price_range)
 
     # Star rating filter
-    if star_rating > 0.0:
-        query += " AND star_rating >= %s"
-        params.append(star_rating)
+    if star_rating_range[0] > 0.0 or star_rating_range[1] < 5.0:
+        query += " AND star_rating BETWEEN %s AND %s"
+        params.extend(star_rating_range)
 
     # Seat availability filter
     if seat_availability > 0:
         query += " AND seats_available >= %s"
         params.append(seat_availability)
+
+    # Departing time filter
+    if depart_time is not None:
+        query += " AND departing_time >= %s"
+        params.append(depart_time)
+
+    # Reaching time filter
+    if reach_time is not None:
+        query += " AND reaching_time <= %s"
+        params.append(reach_time)
 
     return query, params
 
@@ -60,30 +82,44 @@ def load_data(query, params=None):
 # Sidebar filters
 st.sidebar.header("Filter Options")
 
-# Route Name Filter
-routes = load_data("SELECT DISTINCT route_name FROM RED_BUS_ROUTES")
-route_filter = st.sidebar.multiselect("Route Name", routes['route_name'])
+# State Filter
+states = load_data("SELECT DISTINCT state FROM RED_BUS_R")
+state_filter = st.sidebar.selectbox("State", states['state'])
 
-# Bus Type Filter
-bus_types = load_data("SELECT DISTINCT bustype FROM RED_BUS_ROUTES")
-bus_type_filter = st.sidebar.multiselect("Bus Type", bus_types['bustype'])
+# Route Name Filter (filtered based on the selected state)
+if state_filter:
+    routes = load_data("SELECT DISTINCT route_name FROM RED_BUS_R WHERE state = %s", [state_filter])
+    route_filter = st.sidebar.multiselect("Route Name", routes['route_name'])
+else:
+    route_filter = []
 
-# Bus Name Filter
-bus_names = load_data("SELECT DISTINCT busname FROM RED_BUS_ROUTES")
+# Bus Type Filter (using radio buttons)
+bus_type_filter = st.sidebar.radio("Bus Type", ['A/C', 'NON A/C'])  # A/C or Non A/C
+
+# Bus Name Filter (filtered based on the selected state)
+bus_names = load_data("SELECT DISTINCT busname FROM RED_BUS_R WHERE state = %s", [state_filter])
 bus_name_filter = st.sidebar.multiselect("Bus Name", bus_names['busname'])
 
 # Price Range Filter
-price_min, price_max = load_data("SELECT MIN(price), MAX(price) FROM RED_BUS_ROUTES").iloc[0]
+price_min, price_max = load_data("SELECT MIN(price), MAX(price) FROM RED_BUS_R WHERE state = %s", [state_filter]).iloc[0]
 price_range_filter = st.sidebar.slider("Price Range", float(price_min), float(price_max), (float(price_min), float(price_max)))
 
-# Star Rating Filter
-star_rating_filter = st.sidebar.slider("Minimum Star Rating", 0.0, 5.0, 0.0)
+# Star Rating Filter (double-sided slider for a range)
+star_rating_range_filter = st.sidebar.slider("Star Rating Range", 0.0, 5.0, (0.0, 5.0))
 
 # Seat Availability Filter
 seat_availability_filter = st.sidebar.slider("Minimum Seats Available", 0, 50, 0)
 
+# Time Selection Filters for Departing and Reaching
+depart_time_filter = st.sidebar.time_input("Select Departing Time", None)
+reach_time_filter = st.sidebar.time_input("Select Reaching Time", None)
+
+# Convert times to 24-hour format (if None, pass None to avoid filtering by time)
+def time_to_24hr(time_input):
+    return time_input.strftime('%H:%M') if time_input is not None else None
+
 # Filter data based on user input
-query, params = filter_data(route_filter, bus_type_filter, bus_name_filter, price_range_filter, star_rating_filter, seat_availability_filter)
+query, params = filter_data(state_filter, route_filter, bus_type_filter, bus_name_filter, price_range_filter, star_rating_range_filter, seat_availability_filter, time_to_24hr(depart_time_filter), time_to_24hr(reach_time_filter))
 filtered_data = load_data(query, params)
 
 # Display filtered data
